@@ -1,0 +1,397 @@
+1.IN JENKINS I WANA RUN DOCKER BUILD,PUSH,RUN.
+
+pipeline{
+    agent any
+    stages{
+        stage("Git Checkout"){
+            steps{
+                git branch:'master',url:'https://github.com/javahometech/python-app'
+            }
+        }
+        stage("Docker Build"){
+            steps{
+               sh 'docker build -t manjukempaiah/mypro:0.0.2 .'
+            } 
+        }
+        stage("Docker Hub Push"){
+            steps{
+              withCredentials([usernamePassword(credentialsId: 'docker-hub', passwordVariable: 'pwd', usernameVariable: 'usr')]) {
+              sh "docker login -u ${usr} -p ${pwd}"
+              sh "docker push manjukempaiah/mypro:0.0.2"
+              }
+            } 
+        }
+        stage ("Docker Dev Deploy"){
+            steps{
+               sshagent(['docker-ssh']) {
+                sh "ssh -o StrictHostKeyChecking=no ec2-user@172.31.44.200 docker run -d -p 8080:8080 --name myapp manjukempaiah/mypro:0.0.2"      
+               }
+            }
+        }
+    }
+}
+
+2.SONARQUBE
+
+pipeline{
+    agent any
+    stages{
+        stage("SCM"){
+            steps{
+                git branch:'main', credentialsId:'git-ManjuKempaiah', url:'https://github.com/ManjuKempaiah/chatboy'
+            }
+        }
+        stage("Maven and sonar"){
+            parallel{
+                stage("Maven Package"){
+                    steps{
+                        sh 'mvn clean package'
+                    }
+                }
+                stage("Sonar Analysis"){
+                    steps{
+                        withSonarQubeEnv('sonar10'){
+                            sh 'mvn sonar:sonar'
+                        }
+                    }
+                }
+            }
+        }
+        stage("Sonar Status"){
+            steps{
+                script{
+                    def qg = waitForQualityGate()
+                    if (qg.status != 'OK'){
+                        error "Sonar Analysis failed..."
+                    }
+                }
+            }
+        }
+    }
+}
+
+3.SHARED LIBRARY HELLO WORLD
+
+@Library('jhc-libs23') _
+
+pipeline{
+    agent any
+    stages{
+        stage("Hello"){
+            steps{
+                greet("Manju")
+                greet('Manju Amreen')
+            }
+        }
+    }
+}
+
+4.PARALLEL STAGES
+
+pipeline {
+    agent any
+
+    stages {
+        stage('Task1 and Task2') {
+           parallel{
+               stage("Task1"){
+                   steps{
+                       echo "task1...."
+                   }
+               }
+                stage("Task2"){
+                   steps{
+                       echo "task2...."
+                   }
+               }
+           }
+        }
+    }
+}
+
+5.CICD PIPELINE WITH SHARED LIBRARY
+
+@Library('jhc-libs23') _
+
+pipeline{
+    agent any
+    stages{
+        stage("git checkout"){
+            steps{
+                git branch:'develop',credentialsId:'git-ManjuKempaiah',url:'https://github.com/ManjuKempaiah/chatkerala'
+            }
+        }
+        stage("Maven Build"){
+            steps{
+                sh 'mvn clean package'
+            }
+        }
+        stage("Tomcat Deploy"){
+            steps{
+                tomcatDeploy('172.31.47.249','tomcat-dev','chatkerala.war')
+            }
+        }
+    }
+}
+
+6.JENKINS PARAMETERS
+
+pipeline {
+    agent any
+   parameters {
+  choice choices: ['dev', 'test', 'stage', 'prod'], description: 'choose the environment to deploy', name: 'environment'
+}
+    stages {
+        stage('Git Checkout') {
+            when{
+                expression{
+                    params.environment == "dev"
+                }
+            }
+            steps {
+     git branch: 'main', credentialsId: 'git-ManjuKempaiah', url: 'https://github.com/ManjuKempaiah/chatcat'
+            }
+        }
+        stage('Maven Build') {
+            when{
+                expression{
+                    params.environment == "dev"
+                }
+            }
+            steps {
+     sh 'mvn clean package '
+            }
+        }
+        stage('Dev Deploy') {
+            when{
+                expression{
+                    params.environment == "dev"
+                }
+            }
+            steps {
+     echo 'deploy to development'
+            }
+        }
+         stage('Test Deploy') {
+             when{
+                expression{
+                    params.environment == "test"
+                }
+            }
+            steps {
+     echo 'deploy to test'
+            }
+        }
+        stage('stage Deploy') {
+            when{
+                expression{
+                    params.environment == "stage"
+                }
+            }
+            steps {
+     echo 'stage to test'
+            }
+        }
+        stage('prod Deploy') {
+            when{
+                expression{
+                    params.environment == "prod"
+                }
+            }
+            steps {
+     echo 'deploy to prod'
+            }
+        }
+    }
+}
+
+7.MULTIBRANCHING PIPELINE
+
+pipeline{
+  agent any
+  stages{
+    stage("Maven Build"){
+      steps{
+        echo "This is Jenkinsfile demo"
+      }
+    }
+    stage("Dev Deploy"){
+      when{
+        branch"develop"
+      }
+      steps{
+        echo "deploying to dev"
+      }
+    }
+    stage("Test Deploy"){
+      when{
+        branch"test"
+      }
+      steps{
+        echo "deploying to test"
+      }
+    }
+    stage("Prod Deploy"){
+      when{
+        branch"main"
+      }
+      steps{
+        echo "deploying to prod"
+      }
+    }
+  }
+}
+
+8.SHARED LIB GREET.GROOVY
+
+def call(name){
+  echo "Hi ${name}, Welcome"
+}
+
+9.SHARED LIB TOMCATDEPLOY.GROOVY
+
+def call(ip,creds,warFile){
+// install ssh agent plugin
+            sshagent([creds]){
+                // copy war file to tomcat-dev
+                sh "scp -o StrictHostKeyChecking=no target/${warFile} ec2-user@${ip}:/opt/tomcat9/webapps"
+                // restart tomcat
+                sh "ssh ec2-user@${ip} /opt/tomcat9/bin/shutdown.sh"
+                sh "ssh ec2-user@${ip} /opt/tomcat9/bin/startup.sh"
+            }
+}
+
+10.CICD PIPELINE
+
+pipeline{
+    agent any
+    stages{
+        stage("Git Checkout"){
+            steps{
+                git branch:'main',credentialsId:'git-ManjuKempaiah',url:'https://github.com/ManjuKempaiah/chattakkar'
+            }
+        }
+        stage("Maven Build"){
+            steps{
+                sh 'mvn clean package'
+            }
+        }
+        stage("Tomact Delpoy"){
+            steps{
+                //install sshagent
+                sshagent(['tomcat-dev']){
+                    // copy warfile to tomcat-dev
+                    sh "scp target/chattakkar.war ec2-user@172.31.47.249:/opt/tomcat9/webapps"
+                    // restart tomcat
+                    sh "ssh ec2-user@172.31.47.249 /opt/tomcat9/bin/shutdown.sh"
+                    sh "ssh ec2-user@172.31.47.249 /opt/tomcat9/bin/startup.sh"
+                }
+            }
+        }
+    }
+}
+
+11.Srikanth 
+
+stage('Deploy Docker image ') {
+            steps {
+             sshagent(['dockerkey']) {
+                 
+                 sh "ssh -o StrictHostKeyChecking=no ec2-user@15.206.158.76 docker rm -f pyapp"
+                 
+                 sh "ssh ec2-user@15.206.158.76 docker run -d -p 9090:5000 --name pyapp srikanth1014/pyapp:0.1"
+    
+                }
+            }
+        }
+
+12.How to trigger job B using pipeline
+
+pipeline{
+    agent any
+    stages{
+        stage("Hello"){
+            steps{
+                echo "ManjuAmreen"
+            }
+        }
+        stage("Trigger Build"){
+            steps{
+                build('CICD-pipeline18')
+            }
+        }
+    }
+}
+
+13.Docker Demo Prasanna
+
+pipeline{
+    agent any
+    environment{
+        DOCKER_TAG = "0.0.3"
+    }
+    stages{
+        stage("Git Checkout"){
+            steps{
+                git branch:'main',credentialsId:'git-ManjuKempaiah',url:'https://github.com/ManjuKempaiah/docker-repo'
+            }
+        }
+        stage("Docker Build"){
+            steps{
+                sh "docker build -t manjukempaiah/pyapp:${DOCKER_TAG} ."
+            }
+        }
+        stage("Docker Push"){
+            steps{
+                withCredentials([usernamePassword(credentialsId: 'docker-hub', passwordVariable: 'pwd', usernameVariable: 'user')]) {
+               sh "docker login -u ${user} -p ${pwd}"
+               sh "docker push manjukempaiah/pyapp:${DOCKER_TAG}"
+          }
+            }
+        }
+         stage("Docker Dev Deploy"){
+            steps{
+                sshagent(['docker-ssh']){
+                    sh "ssh -o StrictHostKeyChecking=no ec2-user@172.31.21.241 docker rm -f pyapp"
+                    sh "ssh ec2-user@172.31.21.241 docker run -d -p 5000:80 --name pyapp manjukempaiah/pyapp:${DOCKER_TAG}"
+                }
+            }
+        }
+    }
+}
+
+14. Nexus Upload
+
+pipeline{
+    agent any
+    stages{
+        stage("Git Checkout"){
+            steps{
+                git branch:'main',credentialsId:'git-ManjuKempaiah',url:'https://github.com/ManjuKempaiah/chatleo'
+            }
+        }
+         stage("Maven Build"){
+            steps{
+                sh "mvn clean package"
+            }
+        }
+         stage("Nexus Push"){
+            steps{
+               script{
+                def pom = readMavenPom file: 'pom.xml'
+                def version = pom.version
+                def repoName = version.endsWith("SNAPSHOT") ? "manju-snapshot" : "manju-release"
+                nexusArtifactUploader artifacts: [[artifactId: '1.0', classifier: '', file: 'target/chatleo.war', type: 'war']], credentialsId: 'nexus3', 
+                groupId: 'in.javahome', 
+                nexusUrl: '172.31.17.73:8081', 
+                nexusVersion: 'nexus3', 
+                protocol: 'http', 
+                repository: "${repoName}", 
+                version: "${version}"
+               }
+            }
+        }
+    }
+}
+
+
