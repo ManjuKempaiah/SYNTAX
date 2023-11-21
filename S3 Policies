@@ -1,0 +1,93 @@
+1. Create an Amazon SNS topic
+
+{
+    "Version": "2012-10-17",
+    "Id": "example-ID",
+    "Statement": [
+        {
+            "Sid": "Example SNS topic policy",
+            "Effect": "Allow",
+            "Principal": {
+                "Service": "s3.amazonaws.com"
+            },
+            "Action": [
+                "SNS:Publish"
+            ],
+            "Resource": "SNS-topic-ARN",
+            "Condition": {
+                "ArnLike": {
+                    "aws:SourceArn": "arn:aws:s3:*:*:bucket-name"
+                },
+                "StringEquals": {
+                    "aws:SourceAccount": "bucket-owner-account-id"
+                }
+            }
+        }
+    ]
+}  
+
+2. S3 Bucket Public Access Policy
+
+{
+    "Version": "2012-10-17",
+    "Statement": [
+        {
+            "Sid": "PublicReadGetObject",
+            "Effect": "Allow",
+            "Principal": "*",
+            "Action": [
+                "s3:GetObject"
+            ],
+            "Resource": [
+                "arn:aws:s3:::Bucket-Name/*"
+            ]
+        }
+    ]
+}   
+
+3 S3 Bucket Public Access Policy
+
+  "Version": "2008-10-17",
+  "Id": "__default_policy_ID",
+  "Statement": [
+    {
+      "Sid": "__default_statement_ID",
+      "Effect": "Allow",
+      "Principal": {
+        "AWS": "*"
+      },
+      "Action": [
+        "SNS:Publish",
+        "SNS:RemovePermission",
+        "SNS:SetTopicAttributes",
+        "SNS:DeleteTopic",
+        "SNS:ListSubscriptionsByTopic",
+        "SNS:GetTopicAttributes",
+        "SNS:AddPermission",
+        "SNS:Subscribe"
+      ],
+      "Resource": "arn:aws:sns:eu-north-1:164489746743:S3-Notifications",
+      "Condition": {
+        "StringEquals": {
+          "AWS:SourceOwner": "164489746743"
+        }
+      }
+    },
+    {
+      "Sid": "Example SNS topic policy",
+      "Effect": "Allow",
+      "Principal": {
+        "Service": "s3.amazonaws.com"
+      },
+      "Action": "SNS:Publish",
+      "Resource": "arn:aws:sns:eu-north-1:164489746743:S3-Notifications",
+      "Condition": {
+        "ArnLike": {
+          "aws:SourceArn": "arn:aws:s3:*:*:kemp-bucket"
+        }
+      }
+    }
+  ]
+}
+
+             
