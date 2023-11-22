@@ -394,4 +394,86 @@ pipeline{
     }
 }
 
+15.
+
+pipeline {
+    agent none
+
+    stages {
+        stage('Build on Agent1') {
+            agent {
+                label 'agent1'
+            }
+            steps {
+                // Build steps for Agent1
+            }
+        }
+
+        stage('Build on Agent2') {
+            agent {
+                label 'agent2'
+            }
+            steps {
+                // Build steps for Agent2
+            }
+        }
+    }
+}
+
+16. Node block
+
+pipeline {
+    agent none
+
+    stages {
+        stage('Build on Agent1') {
+            steps {
+                node('agent1') {
+                    // Build steps for Agent1
+                }
+            }
+        }
+
+        stage('Build on Agent2') {
+            steps {
+                node('agent2') {
+                    // Build steps for Agent2
+                }
+            }
+        }
+    }
+}
+
+17. Using the archiveArtifacts Step
+
+pipeline {
+    agent any
+
+    stages {
+        stage('Build') {
+            steps {
+                // Your build steps here
+                
+                // Archive artifacts
+                archiveArtifacts artifacts: 'target/*.jar', fingerprint: true
+            }
+        }
+        
+        stage('Test') {
+            steps {
+                // Your test steps here
+            }
+        }
+        
+        stage('Deploy') {
+            steps {
+                // Your deployment steps here
+                
+                // Retrieve artifacts from the latest successful build
+                copyArtifacts(projectName: 'your-job-name', selector: lastSuccessful())
+            }
+        }
+    }
+}
+
 
