@@ -1,0 +1,53 @@
+mvn archetype:generate \
+	-DgroupId=in.javahome \
+	-DartifactId=chatnike \
+	-DarchetypeArtifactId=maven-archetype-webapp \
+	-DinteractiveMode=false
+
+suren996655
+
+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
+
+http://nginx.org/packages/centos/7/noarch/RPMS/nginx-release-centos-7-0.el7.ngx.noarch.rpm
+
+  <build>
+	  <finalName>chatbot</finalName>
+	  <plugins>
+		  <plugin>
+    			<groupId>org.apache.maven.plugins</groupId>
+    			<artifactId>maven-war-plugin</artifactId>
+    			<version>3.3.1</version>
+		 </plugin>
+	 </plugins>
+  </build>
+</project>
+
+<dependency>
+    <groupId>com.itextpdf</groupId>
+    <artifactId>itextpdf</artifactId>
+    <version>5.5.13.2</version>
+</dependency>
+
+Shell Scripting (Amiya)
+
+https://docs.google.com/document/d/1_Wut2U4pDXi5l_nNTX9ejzuM-tBJlIcqs61jss9OF7M/edit?usp=sharing
+https://github.com/amiyaranjansahoo/ShellScripting/blob/main/loop/for.sh
+
+https://nodejs.org/en/docs/guides/nodejs-docker-webapp
+
+https://drive.google.com/drive/folders/1JRLrlkoMIvB-HbNULSPtRoPDR4IVwTwZ?usp=sharing
+
+
+UUID=9e68e11e-a080-41bc-b953-d58c17fd6b9c /myvol ext4 defaults,nofail 0 2  EBS
+
+https://www.projectpro.io/article/real-time-devops-projects-for-practice/585 srinivas
+
+https://www.davidc.net/sites/default/subnets/subnets.html    /subnet calculator/
+https://www.dnswatch.info/
+
+https://docs.python.org/3/py-modindex.html
+https://pypi.org/
+https://boto3.amazonaws.com/v1/documentation/api/latest/index.html
+
+
+
