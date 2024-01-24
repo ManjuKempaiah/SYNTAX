@@ -1,0 +1,260 @@
+Ansible
+
+1.Configuration management,application deployment,task automation and orchestration(YAML Language)
+
+2.Developed by RedHat
+
+3.Control Node:Is the server where the ansible installed
+
+4.Manage Node: Any server configured using ansible
+
+5.Ansible is push based
+
+6.Ansible is not agent based (Chef is agent based)
+
+7.Inventiry file:/etc/ansible/hosts  (to store manage node sever details ip,user,password)
+
+8.Ansible does automation using modules.
+
+9.Servers in same network can communicate using private ip.
+
+10. --become=sudo (Normal user dont have permission to install,while using sudo executes a command with administrative privileges) root=admin.
+
+we are not running  the command in local we are running on remote machine.
+
+11.Typically ansible playbooks stored in git repository.
+
+12. - host: '-' indicates list, playbook means bunch of tasks we want execute on specific node or group of nodes. 
+
+13. host - on which host we are running or executing playbook
+
+14. become : True - run the task using sudo.
+
+https://github.com/javahometech/ansible-tomcat-lb-mysql/blob/master/roles/loadbalancer/handlers/main.yml
+https://github.com/javahometech/ansible-nginx-tomcat/blob/master/roles/loadbalancer/tasks/main.yml
+
+15.Apache playbook
+
+- hosts: 172.31.36.99
+  become: True
+  tasks:
+    - name: install apache
+      yum:
+        name: httpd
+        state: present
+    - name : put sample html file on apache
+      copy:
+        src: index.html
+        dest: /var/www/html
+    - name: start and enable apache
+      service:
+        name: httpd
+        state: started
+        enabled: True
+
+16.executing apache playbook on two hosts.
+
+- hosts: 172.31.36.99,172.31.35.60
+  become: True
+  tasks:
+    - name: install apache
+      yum:
+        name: httpd
+        state: present
+    - name : put sample html file on apache
+      copy:
+        src: index.html
+        dest: /var/www/html
+    - name: start and enable apache
+      service:
+        name: httpd
+        state: started
+        enabled: True
+
+17.Nginx playbook
+
+- hosts: 172.31.41.58
+  become: True
+  tasks:
+    - name: configure nginx rpm
+      yum: name=http://nginx.org/packages/centos/7/noarch/RPMS/nginx-release-centos-7-0.el7.ngx.noarch.rpm
+    - name: install nginx
+      yum:
+        name: nginx
+        state: present
+    - name: copy nginx config file
+      copy:
+        src: nginx.conf
+        dest: /etc/nginx/nginx.conf
+      notify:
+          - restart nginx
+    - name: start and enable
+      service:
+        name: nginx
+        state: started
+        enabled: True
+  handlers:
+    - name: restart nginx
+      service :
+        name: nginx
+        state: restarted
+
+18.nginx.conf
+
+events {}
+http {
+        upstream backend {
+                server 172.31.36.99:80;
+                server 172.31.35.60:80;
+
+        }
+        server {
+                listen 80;
+                location / {
+                        proxy_pass http://backend;
+                }
+        }
+}
+
+19.Ansible Template
+
+template.yml
+
+- hosts: localhost
+  tasks:
+    - name: template demo
+      template:
+        src: jhc.j2
+        dest: jhc.conf
+
+20. jhc.j2
+
+Hi {{name}},This is template demo
+
+21.Ansible Tags
+
+apache.yml
+
+- hosts: web
+  become: True
+  tasks:
+    - name: Install apache
+      yum:
+        name: httpd
+        state: present
+      tags:
+          - install
+    - name: put sample html file on apache
+      copy:
+        src: index.html
+        dest: /var/www/html/
+      tags:
+          - deploy
+    - name: start and enable apache
+      service:
+        name: httpd
+        state: started
+        enabled: True
+      tags:
+          - start
+
+21.myvars.yml
+
+user_name: "Manju"
+
+22.variables.yml
+
+- hosts: localhost
+  vars_files:
+    - myvars.yml
+  tasks:
+    - name: This is variable demo
+      debug:
+        msg: "Hi {{user_name}}, Good morining"
+
+22.Can you please write ansible playbook conditionally install a package,if it is linux how to install package,if it is ubuntu how to install a package.
+
+- hosts: 172.31.36.99
+  become: True
+  tasks:
+    - name: install apache on linux
+      yum:
+        name: httpd
+        state: present
+      when: ansible_facts['os_family'] == "RedHat"
+    - name: install apache on ubuntu
+      apt:
+        name: apache2
+        state: present
+      when: ansible_facts['os_family'] == "Debian"
+
+23.vi roles/nginx/tasks/main.yml
+
+
+---
+# tasks file for nginx
+- name: configure nginx rpm
+  yum: name=http://nginx.org/packages/centos/7/noarch/RPMS/nginx-release-centos-7-0.el7.ngx.noarch.rpm
+- name: Install ngixn server
+  yum:
+    name: nginx
+    state: present
+    enablerepo: nginx
+- name: start and enable nginx server
+  service:
+     name: nginx
+     state: started
+     enabled: yes
+- name: copy nginx.conf to the nginx server
+  template: src=nginx.conf.j2 dest=/etc/nginx/nginx.conf
+  notify: restart nginx
+
+24.vi roles/nginx/handlers/main.yml
+
+---
+# handlers file for nginx
+- name: restart nginx
+  service:
+    name: nginx
+    state: restarted
+
+25. vi roles/nginx/template/nginx.conf.j2
+
+events {}
+http {
+    upstream backend {
+         {% for web in groups.web %}
+           server {{web}}:8080;
+         {% endfor %}
+    }
+ server {
+   listen 80;
+   location / {
+     proxy_pass  http://backend;
+   }
+ }
+}
+
+26. Docker install
+
+- hosts: localhost
+  become: True
+  tasks:
+    - name: install docker
+      yum:
+        name: docker
+        state: present
+    - name: Grant ec2-user permissions on docker
+      command:
+        cmd: "usermod -a -G docker ec2-user"
+    - name: start docker
+      service:
+        name: docker
+        state: started
+
+
+
+
+
+
+
