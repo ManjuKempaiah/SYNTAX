@@ -3,29 +3,67 @@
 pipeline{
     agent any
     stages{
-        stage("Git Checkout"){
+        stage('Checkout The Code'){
             steps{
-                git branch:'master',url:'https://github.com/javahometech/python-app'
+                git branch:'master', credentialsId:'git-ManjuKempaiah', url:'https://github.com/ManjuKempaiah/python-app'
             }
         }
-        stage("Docker Build"){
+        stage('Docker Build'){
             steps{
-               sh 'docker build -t manjukempaiah/mypro:0.0.2 .'
-            } 
+                sh 'docker build -t manjukempaiah/pyapp:0.0.1 .'
+            }
         }
-        stage("Docker Hub Push"){
+        stage('Docker Hub Push'){
             steps{
-              withCredentials([usernamePassword(credentialsId: 'docker-hub', passwordVariable: 'pwd', usernameVariable: 'usr')]) {
-              sh "docker login -u ${usr} -p ${pwd}"
-              sh "docker push manjukempaiah/mypro:0.0.2"
-              }
-            } 
+               withCredentials([usernamePassword(credentialsId: 'docker-hub', passwordVariable: 'pwd', usernameVariable: 'user')]) {
+             sh "docker login -u ${user} -p ${pwd}"
+             sh "docker push manjukempaiah/pyapp:0.0.1"
+             } 
+            }
         }
-        stage ("Docker Dev Deploy"){
+        stage('Dcoker Dev Deploy'){
             steps{
-               sshagent(['docker-ssh']) {
-                sh "ssh -o StrictHostKeyChecking=no ec2-user@172.31.44.200 docker run -d -p 8080:8080 --name myapp manjukempaiah/mypro:0.0.2"      
-               }
+                sshagent(['docker-ssh']) {
+              sh "ssh -o StrictHostKeyChecking=no ec2-user@172.31.34.174 docker rm -f pyapp"
+              sh "ssh ec2-user@172.31.34.174 docker run -d -p 8080:5000 --name pyapp manjukempaiah/pyapp:0.0.1"
+             }
+            }
+        }
+    }
+}
+
+1a.Docker
+
+pipeline{
+    agent any
+    environment{
+        DOCKER_TAG = "0.0.2"
+    }
+    stages{
+        stage('Checkout The Code'){
+            steps{
+                git branch:'master', credentialsId:'git-ManjuKempaiah', url:'https://github.com/ManjuKempaiah/python-app'
+            }
+        }
+        stage('Docker Build'){
+            steps{
+                sh 'docker build -t manjukempaiah/pyapp:${DOCKER_TAG} .'
+            }
+        }
+        stage('Docker Hub Push'){
+            steps{
+               withCredentials([usernamePassword(credentialsId: 'docker-hub', passwordVariable: 'pwd', usernameVariable: 'user')]) {
+             sh "docker login -u ${user} -p ${pwd}"
+             sh "docker push manjukempaiah/pyapp:${DOCKER_TAG}"
+             } 
+            }
+        }
+        stage('Dcoker Dev Deploy'){
+            steps{
+                sshagent(['docker-ssh']) {
+              sh "ssh -o StrictHostKeyChecking=no ec2-user@172.31.34.174 docker rm -f pyapp"
+              sh "ssh ec2-user@172.31.34.174 docker run -d -p 8080:5000 --name pyapp manjukempaiah/pyapp:${DOCKER_TAG}"
+             }
             }
         }
     }
@@ -68,6 +106,46 @@ pipeline{
             }
         }
     }
+}
+
+2. SonarQube 
+
+pipeline{
+	agent any
+	environment{
+	GIT_BRANCH = "main"
+	GIT_CREDS = "git-ManjuKempaiah"
+	GIT_URL = "https://github.com/ManjuKempaiah/chatbot"
+	}
+	stages{
+	stage('Checkout The Code'){
+	steps{
+	git branch: GIT_BRANCH, credentialsId: GIT_CREDS, url: GIT_URL
+	}
+	}
+	stage('Maven Build'){
+	steps{
+	sh 'mvn clean package'
+	}
+	}
+	stage('SonarQube Analysis'){
+	steps{
+	withSonarQubeEnv('sonar10'){
+	sh 'mvn sonar:sonar'
+	}
+	}
+	}
+	stage('SonarQube Analysis Status'){
+	steps{
+	script{
+	def qg = waitForQualityGate()
+	if (qg.status != 'OK'){
+	error "Sonar Analysis Failed"
+	}
+	}
+	}
+	}
+	}
 }
 
 3.SHARED LIBRARY HELLO WORLD
@@ -291,21 +369,9 @@ pipeline{
     }
 }
 
-11.Srikanth 
 
-stage('Deploy Docker image ') {
-            steps {
-             sshagent(['dockerkey']) {
-                 
-                 sh "ssh -o StrictHostKeyChecking=no ec2-user@15.206.158.76 docker rm -f pyapp"
-                 
-                 sh "ssh ec2-user@15.206.158.76 docker run -d -p 9090:5000 --name pyapp srikanth1014/pyapp:0.1"
-    
-                }
-            }
-        }
 
-12.How to trigger job B using pipeline
+12.How to trigger job B using pipeline		
 
 pipeline{
     agent any
@@ -323,42 +389,30 @@ pipeline{
     }
 }
 
-13.Docker Demo Prasanna
+13. Jenkins Slave
 
 pipeline{
-    agent any
-    environment{
-        DOCKER_TAG = "0.0.3"
+    agent{
+        label 'slave1'
     }
     stages{
-        stage("Git Checkout"){
-            steps{
-                git branch:'main',credentialsId:'git-ManjuKempaiah',url:'https://github.com/ManjuKempaiah/docker-repo'
-            }
-        }
-        stage("Docker Build"){
-            steps{
-                sh "docker build -t manjukempaiah/pyapp:${DOCKER_TAG} ."
-            }
-        }
-        stage("Docker Push"){
-            steps{
-                withCredentials([usernamePassword(credentialsId: 'docker-hub', passwordVariable: 'pwd', usernameVariable: 'user')]) {
-               sh "docker login -u ${user} -p ${pwd}"
-               sh "docker push manjukempaiah/pyapp:${DOCKER_TAG}"
-          }
-            }
-        }
-         stage("Docker Dev Deploy"){
-            steps{
-                sshagent(['docker-ssh']){
-                    sh "ssh -o StrictHostKeyChecking=no ec2-user@172.31.21.241 docker rm -f pyapp"
-                    sh "ssh ec2-user@172.31.21.241 docker run -d -p 5000:80 --name pyapp manjukempaiah/pyapp:${DOCKER_TAG}"
+        stage('Task1 and Task2'){
+            parallel{
+                stage('Task1'){
+                    steps{
+                        echo "Task1...."
+                    }
+                }
+                stage('Task2'){
+                    steps{
+                        echo "Task2...."
+                    }
                 }
             }
         }
     }
 }
+
 
 14. Nexus Upload
 
@@ -394,7 +448,56 @@ pipeline{
     }
 }
 
-15.
+
+14.Nexus Release Version and Snapshot Version
+
+pipeline{
+    agent any
+    stages{
+        stage('Checkout The Code'){
+            steps{
+                git branch:'main', credentialsId:'git-ManjuKempaiah', url:'https://github.com/ManjuKempaiah/chatram'
+            }
+        }
+        stage('Maven Build'){
+            steps{
+              sh 'mvn clean package'  
+            }
+        }
+        stage('Nexus Artifact Upload'){
+            steps{
+              nexusArtifactUploader artifacts: [[artifactId: 'chatram', classifier: '', file: 'target/chatram.war', type: 'war']], credentialsId: 'nexus3', groupId: 'in.javahome', nexusUrl: '16.16.184.210:8081', nexusVersion: 'nexus3', protocol: 'http', repository: 'manju-release', version: '1.0' 
+            }
+        }
+    }
+}
+
+----------------------------------------------------------------------------------------
+
+pipeline{
+    agent any
+    stages{
+        stage('Checkout The Code'){
+            steps{
+                git branch:'main', credentialsId:'git-ManjuKempaiah', url:'https://github.com/ManjuKempaiah/chatram'
+            }
+        }
+        stage('Maven Build'){
+            steps{
+              sh 'mvn clean package'  
+            }
+        }
+        stage('Nexus Artifact Upload'){
+            steps{
+              nexusArtifactUploader artifacts: [[artifactId: 'chatram', classifier: '', file: 'target/chatram.war', type: 'war']], credentialsId: 'nexus3', groupId: 'in.javahome', nexusUrl: '16.16.184.210:8081', nexusVersion: 'nexus3', protocol: 'http', repository: 'manju-snapshot', version: '1.0-SNAPSHOT' 
+            }
+        }
+    }
+}
+
+----------------------------------------------------------------------------------------	
+
+15. Agent Block
 
 pipeline {
     agent none
@@ -476,4 +579,193 @@ pipeline {
     }
 }
 
+18. Environment Variables
+
+pipeline{
+    agent any
+    environment{
+        GIT_BRANCH = "main"
+        GIT_URL  = "https://github.com/ManjuKempaiah/docker-repo"
+        GIT_CREDS = "git-manjukempaiah"
+    }
+    stages{
+        stage('Checkout the Code'){
+      steps{
+           git branch: GIT_BRANCH, credentialsId: GIT_CREDS, url: GIT_URL
+      }    
+        
+    }
+}
+}
+
+
+19. To install Nginx
+
+pipeline {
+    agent any
+    
+    stages {
+        stage('Install Nginx') {
+            steps {
+                script {
+                    // Update package repository
+                    sh 'sudo yum -y update'
+                    
+                    // Install Nginx
+                    sh 'sudo yum -y install nginx'
+                    
+                    // Start Nginx service
+                    sh 'sudo systemctl start nginx'
+                    
+                    // Enable Nginx to start on boot
+                    sh 'sudo systemctl enable nginx'
+                }
+            }
+        }
+    }
+}
+
+20. To Install Node.js
+
+pipeline {
+    agent any
+    
+    environment {
+        NODE_VERSION = '14.x'
+    }
+    
+    stages {
+        stage('Install Node.js') {
+            steps {
+                script {
+                    // Install Node.js using NodeSource repository
+                    sh 'curl -sL https://rpm.nodesource.com/setup_${NODE_VERSION} | sudo bash -'
+                    sh 'sudo yum -y install nodejs'
+                }
+            }
+        }
+    }
+}
+
+21. To Install Docker
+
+pipeline{
+	agent any
+	stages{
+	stage('Install Docker'){
+	steps{
+	script{
+	// Install docker
+	sh 'sudo yum install docker -y'
+	// Start docker
+	sh 'sudo systemctl start docker'
+	// Grant ec2-user permissions on docker
+	sh 'usermod -a -G docker ec2-user'
+	}
+	}
+	}
+	}
+}
+
+22. To Install Ansible
+
+pipeline{
+	agent any
+	stages{
+	stage('Install Ansible'){
+	steps{
+	script{
+	// Install EPEL repository          EPEL is needed to access the Ansible package on Amazon Linux
+	sh 'sudo yum install epel-release'  Extra Packages for Enterprise Linux 
+	// Install Ansible
+	sh 'sudo yum instll ansible -y'
+	}
+	}
+	}
+	}
+}
+
+23. To Install Maven
+
+pipeline {
+    agent any
+    
+    stages {
+        stage('Install Maven') {
+            steps {
+                script {
+                    // Install Maven
+                    sh 'sudo yum -y install maven'
+                }
+            }
+        }
+    }
+}
+
+24. To Install Git
+
+pipeline {
+    agent any
+    
+    stages {
+        stage('Install Git') {
+            steps {
+                script {
+                    // Install Git
+                    sh 'sudo yum -y install git'
+                }
+            }
+        }
+    }
+}
+
+25. To Install Tomcat
+
+pipeline {
+    agent any
+    
+    stages {
+        stage('Install Tomcat') {
+            steps {
+                script {
+                    // Install Java
+                    sh 'sudo yum -y install java-1.8.0-openjdk'
+                    
+                    // Download and extract Tomcat
+                    sh 'wget https://archive.apache.org/dist/tomcat/tomcat-9/v9.0.53/bin/apache-tomcat-9.0.53.tar.gz'
+                    sh 'tar -xvf apache-tomcat-9.0.53.tar.gz'
+                    
+                    // Move Tomcat to /opt directory
+                    sh 'sudo mv apache-tomcat-9.0.53 /opt/tomcat'
+                    
+                    // Set permissions
+                    sh 'sudo chmod -R 755 /opt/tomcat'
+                    
+                    // Start Tomcat
+                    sh 'sudo /opt/tomcat/bin/startup.sh'
+                }
+            }
+        }
+    }
+}
+
+26. Upstream
+
+pipeline {
+    agent any
+    triggers {
+      upstream 'ai-app-ci-cd'
+    }
+
+    stages {
+        stage('Selenium Testing') {
+            steps {
+                echo 'Hello Selenium testing'
+            }
+        }
+    }
+}
+
+
+	
 
