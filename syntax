@@ -1,4 +1,4 @@
-1.IN JENKINS I WANA RUN DOCKER BUILD,PUSH,RUN.
+1.Docker Dev Deploy
 
 pipeline{
     agent any
@@ -32,7 +32,9 @@ pipeline{
     }
 }
 
-1a.Docker
+--------------------------------------------------------
+
+2.Docker Dev Deploy With Environment Varibale
 
 pipeline{
     agent any
@@ -69,7 +71,9 @@ pipeline{
     }
 }
 
-2.SONARQUBE
+--------------------------------------------------------
+
+3.SonarQube Analysis With Parallel Stages
 
 pipeline{
     agent any
@@ -108,7 +112,9 @@ pipeline{
     }
 }
 
-2. SonarQube 
+--------------------------------------------------------
+
+4.SonarQube Analysis Without Parallel Stages
 
 pipeline{
 	agent any
@@ -148,7 +154,9 @@ pipeline{
 	}
 }
 
-3.SHARED LIBRARY HELLO WORLD
+--------------------------------------------------------
+
+5.SHARED LIBRARY HELLO WORLD
 
 @Library('jhc-libs23') _
 
@@ -164,7 +172,9 @@ pipeline{
     }
 }
 
-4.PARALLEL STAGES
+--------------------------------------------------------
+
+6.PARALLEL STAGES
 
 pipeline {
     agent any
@@ -187,7 +197,9 @@ pipeline {
     }
 }
 
-5.CICD PIPELINE WITH SHARED LIBRARY
+--------------------------------------------------------
+
+7.CICD PIPELINE WITH SHARED LIBRARY
 
 @Library('jhc-libs23') _
 
@@ -212,7 +224,9 @@ pipeline{
     }
 }
 
-6.JENKINS PARAMETERS
+--------------------------------------------------------
+
+8.JENKINS PARAMETERS
 
 pipeline {
     agent any
@@ -283,7 +297,9 @@ pipeline {
     }
 }
 
-7.MULTIBRANCHING PIPELINE
+--------------------------------------------------------
+
+9.MULTIBRANCHING PIPELINE
 
 pipeline{
   agent any
@@ -320,13 +336,17 @@ pipeline{
   }
 }
 
-8.SHARED LIB GREET.GROOVY
+--------------------------------------------------------
+
+10.SHARED LIB GREET.GROOVY
 
 def call(name){
   echo "Hi ${name}, Welcome"
 }
 
-9.SHARED LIB TOMCATDEPLOY.GROOVY
+--------------------------------------------------------
+
+11.SHARED LIB TOMCATDEPLOY.GROOVY
 
 def call(ip,creds,warFile){
 // install ssh agent plugin
@@ -339,7 +359,9 @@ def call(ip,creds,warFile){
             }
 }
 
-10.CICD PIPELINE
+--------------------------------------------------------
+
+12.CICD PIPELINE
 
 pipeline{
     agent any
@@ -369,9 +391,9 @@ pipeline{
     }
 }
 
+--------------------------------------------------------
 
-
-12.How to trigger job B using pipeline		
+13.How to trigger job B using pipeline		
 
 pipeline{
     agent any
@@ -389,7 +411,9 @@ pipeline{
     }
 }
 
-13. Jenkins Slave
+--------------------------------------------------------
+
+14. Jenkins Slave
 
 pipeline{
     agent{
@@ -413,8 +437,9 @@ pipeline{
     }
 }
 
+--------------------------------------------------------
 
-14. Nexus Upload
+15. Nexus Upload
 
 pipeline{
     agent any
@@ -448,8 +473,9 @@ pipeline{
     }
 }
 
+--------------------------------------------------------
 
-14.Nexus Release Version and Snapshot Version
+16.Nexus Release Version
 
 pipeline{
     agent any
@@ -472,8 +498,9 @@ pipeline{
     }
 }
 
-----------------------------------------------------------------------------------------
+--------------------------------------------------------
 
+17.Nexus Snapshot Version
 pipeline{
     agent any
     stages{
@@ -495,9 +522,9 @@ pipeline{
     }
 }
 
-----------------------------------------------------------------------------------------	
+--------------------------------------------------------	
 
-15. Agent Block
+18.Agent Block
 
 pipeline {
     agent none
@@ -523,7 +550,9 @@ pipeline {
     }
 }
 
-16. Node block
+--------------------------------------------------------
+
+19.Node block
 
 pipeline {
     agent none
@@ -547,7 +576,9 @@ pipeline {
     }
 }
 
-17. Using the archiveArtifacts Step
+--------------------------------------------------------
+
+20.Using the archiveArtifacts Step
 
 pipeline {
     agent any
@@ -579,7 +610,9 @@ pipeline {
     }
 }
 
-18. Environment Variables
+--------------------------------------------------------
+
+21.Environment Variables
 
 pipeline{
     agent any
@@ -598,8 +631,9 @@ pipeline{
 }
 }
 
+--------------------------------------------------------
 
-19. To install Nginx
+22.To install Nginx
 
 pipeline {
     agent any
@@ -625,7 +659,9 @@ pipeline {
     }
 }
 
-20. To Install Node.js
+--------------------------------------------------------
+
+23.To Install Node.js
 
 pipeline {
     agent any
@@ -647,7 +683,9 @@ pipeline {
     }
 }
 
-21. To Install Docker
+--------------------------------------------------------
+
+24.To Install Docker
 
 pipeline{
 	agent any
@@ -667,7 +705,9 @@ pipeline{
 	}
 }
 
-22. To Install Ansible
+--------------------------------------------------------
+
+25.To Install Ansible
 
 pipeline{
 	agent any
@@ -685,7 +725,9 @@ pipeline{
 	}
 }
 
-23. To Install Maven
+--------------------------------------------------------
+
+26.To Install Maven
 
 pipeline {
     agent any
@@ -702,7 +744,9 @@ pipeline {
     }
 }
 
-24. To Install Git
+--------------------------------------------------------
+
+27.To Install Git
 
 pipeline {
     agent any
@@ -719,7 +763,9 @@ pipeline {
     }
 }
 
-25. To Install Tomcat
+--------------------------------------------------------
+
+28.To Install Tomcat
 
 pipeline {
     agent any
@@ -749,7 +795,9 @@ pipeline {
     }
 }
 
-26. Upstream
+--------------------------------------------------------
+
+29.Upstream
 
 pipeline {
     agent any
@@ -766,6 +814,64 @@ pipeline {
     }
 }
 
+--------------------------------------------------------
 
+30.Docker Dev Deploy With All Stages
+
+pipeline{
+    agent any
+    stages{
+    stage('Checkout The Code'){
+    steps{
+    git branch:'main', credentialsId:'git-ManjuKempaiah', url:'https://github.com/ManjuKempaiah/python-app'
+    }
+    }
+    stage('Maven Build'){
+    steps{
+    sh 'mvn clean package'
+    }
+    }
+    stage('SonarQube Analysis'){
+    steps{
+    withSonarQubeEnv('sonar10'){
+    sh 'mvn sonar:sonar'
+    }
+    }
+    }
+    stage('SonarQube Analysis Status'){
+    steps{
+    script{
+    def qg = waitForQualityGate()
+    if (qg.status != 'OK'){
+    error "Sonar Analysis Failed"
+    }
+    }
+    }
+    }
+    stage('Docker Build'){
+    steps{
+    sh 'docker build -t manjukempaiah/pythonapp:0.0.1 .'
+    }
+    }
+    stage('Docker Push'){
+    steps{
+    withCredentials([usernamePassword(credentialsId: 'docker-hub', passwordVariable: 'pwd', usernameVariable: 'user')]) {
+    sh "docker login -u ${user} -p ${pwd}"
+    sh "docker push manjukempaiah/pythonapp:0.0.1"
+    }
+    }
+    }
+    stage('Docker Dev Deploy'){
+    steps{
+    sshagent(['docker-ssh']){
+    sh "ssh -o StrictHostKeyChecking=no ec2-user@192.1.168.100 docker rm -f pythonapp"
+    sh "ssh ec2-user@192.168.100 docker run -d -p 8080:5000 --name pythonapp manjukempaiah/pythonapp:0.0.1"
+    }
+    }
+    }
+    }
+}
+
+------------------------------------------------------------
 	
 
